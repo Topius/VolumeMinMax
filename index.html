@@ -37,8 +37,20 @@
         .max-volume {
             background-color: green; /* Background color for maximum volume */
         }
-        .change-percent, .volume, .price {
-            color: white;
+        .price {
+            color: yellow; /* Text color for price */
+        }
+        .volume {
+            color: white; /* Text color for 24h volume */
+        }
+        .change-percent {
+            color: black; /* Text color for % change */
+        }
+        .min-volume .price,
+        .max-volume .price,
+        .min-volume .volume,
+        .max-volume .volume {
+            color: inherit; /* Inherit text color from regular columns */
         }
     </style>
 </head>
@@ -67,12 +79,16 @@
             {% for coin, history in coins_history.items() %}
             <tr>
                 <td>{{ coin.upper() }}</td>
-                <td>{{ history['current'][0]['volume_short'] if history['current'] else 'N/A' }}</td>
-                <td class="{{ 'increase' if history['current'] and history['current'][0]['direction'] == 'Increase' else 'decrease' if history['current'] and history['current'][0]['direction'] == 'Decrease' else '' }}">
+                <td class="{{ 'volume' }}">
+                    {{ history['current'][0]['volume_short'] if history['current'] else 'N/A' }}
+                </td>
+                <td class="{{ 'change-percent ' + ('increase' if history['current'] and history['current'][0]['direction'] == 'Increase' else 'decrease' if history['current'] and history['current'][0]['direction'] == 'Decrease' else '') }}">
                     {{ history['current'][0]['change'] if history['current'] else 'N/A' }}
                 </td>
                 <td>{{ history['current'][0]['direction'] if history['current'] else 'N/A' }}</td>
-                <td>{{ history['current'][0]['price'] if history['current'] else 'N/A' }}</td>
+                <td class="{{ 'price' }}">
+                    {{ history['current'][0]['price'] if history['current'] else 'N/A' }}
+                </td>
                 <!-- Handling Current Data Display -->
                 <td>
                     {% if history['current'] %}
@@ -85,8 +101,9 @@
                 {% for key in ['-30mins', '-1hour', '-1.5hours', '-2hours', '-12hours', 'yesterday'] %}
                 <td class="{{ 'increase' if history.get(key) and history[key]['direction'] == 'Increase' else 'decrease' if history.get(key) and history[key]['direction'] == 'Decrease' else '' }}">
                     {% if history.get(key) %}
-                        <span class="change-percent">{{ history[key]['change'] }}</span> /
-                        <span class="volume">{{ history[key]['volume_short'] }}</span>
+                        <span class="{{ 'change-percent' }}">{{ history[key]['change'] }}</span> /
+                        <span class="{{ 'volume' }}">{{ history[key]['volume_short'] }}</span> /
+                        <span class="{{ 'price' }}">{{ history[key]['price'] if 'price' in history[key] else 'N/A' }}</span>
                     {% else %}
                         N/A
                     {% endif %}
@@ -95,15 +112,20 @@
                 <!-- Monthly Max Volume -->
                 <td class="{{ 'max-volume' if history.get('monthly_max_volume') else '' }}">
                     {% if history.get('monthly_max_volume') %}
-                        {{ format_volume(history['monthly_max_volume']['volume'], short=True) }} at {{ history['monthly_max_volume']['price'] }}
+                        <span class="{{ 'volume' }}">{{ format_volume(history['monthly_max_volume']['volume'], short=True) }}</span>
+                        <span style="color: white;">at</span>
+                        <span class="{{ 'price' }}">{{ history['monthly_max_volume']['price'] }}</span>
                     {% else %}
                         N/A
                     {% endif %}
                 </td>
+
                 <!-- Monthly Min Volume -->
                 <td class="{{ 'min-volume' if history.get('monthly_min_volume') else '' }}">
                     {% if history.get('monthly_min_volume') %}
-                        {{ format_volume(history['monthly_min_volume']['volume'], short=True) }} at {{ history['monthly_min_volume']['price'] }}
+                        <span class="{{ 'volume' }}">{{ format_volume(history['monthly_min_volume']['volume'], short=True) }}</span>
+                        <span style="color: white;">at</span>
+                        <span class="{{ 'price' }}">{{ history['monthly_min_volume']['price'] }}</span>
                     {% else %}
                         N/A
                     {% endif %}
