@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Coin Dashboard</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+        }
+        .coin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .coin-table td, .coin-table th {
+            border: 1px solid white; /* White borders */
+            padding: 8px;
+            text-align: left;
+        }
+        .coin-table th {
+            background-color: #111; /* Dark gray background */
+        }
+        .timestamp-header {
+            background-color: #333; /* Dark gray background */
+        }
+        .increase {
+            background-color: green;
+            color: white; /* Text color for increased values */
+        }
+        .decrease {
+            background-color: red;
+            color: white; /* Text color for decreased values */
+        }
+        .min-volume {
+            background-color: red; /* Background color for minimum volume */
+        }
+        .max-volume {
+            background-color: green; /* Background color for maximum volume */
+        }
+        .change-percent, .volume, .price {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Coin Dashboard</h1>
+    <table class="coin-table">
+        <thead>
+            <tr>
+                <th>Coin</th>
+                <th>24h Volume</th>
+                <th>Change %</th>
+                <th>Direction</th>
+                <th>Price</th> <!-- Added Price column -->
+                <th class="timestamp-header">Current</th>
+                <th class="timestamp-header">-30 mins</th>
+                <th class="timestamp-header">-1 hour</th>
+                <th class="timestamp-header">-1.5 hours</th>
+                <th class="timestamp-header">-2 hours</th>
+                <th class="timestamp-header">-12 hours</th>
+                <th class="timestamp-header">Yesterday</th>
+                <th class="timestamp-header">Monthly Max</th>
+                <th class="timestamp-header">Monthly Min</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for coin, history in coins_history.items() %}
+            <tr>
+                <td>{{ coin.upper() }}</td>
+                <td>{{ history['current'][0]['volume_short'] if history['current'] else 'N/A' }}</td>
+                <td class="{{ 'increase' if history['current'] and history['current'][0]['direction'] == 'Increase' else 'decrease' if history['current'] and history['current'][0]['direction'] == 'Decrease' else '' }}">
+                    {{ history['current'][0]['change'] if history['current'] else 'N/A' }}
+                </td>
+                <td>{{ history['current'][0]['direction'] if history['current'] else 'N/A' }}</td>
+                <td>{{ history['current'][0]['price'] if history['current'] else 'N/A' }}</td>
+                <!-- Handling Current Data Display -->
+                <td>
+                    {% if history['current'] %}
+                        {{ (current_time - history['current'][0]['timestamp']).total_seconds() // 60 }} mins ago
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <!-- Loop through each time interval -->
+                {% for key in ['-30mins', '-1hour', '-1.5hours', '-2hours', '-12hours', 'yesterday'] %}
+                <td class="{{ 'increase' if history.get(key) and history[key]['direction'] == 'Increase' else 'decrease' if history.get(key) and history[key]['direction'] == 'Decrease' else '' }}">
+                    {% if history.get(key) %}
+                        <span class="change-percent">{{ history[key]['change'] }}</span> /
+                        <span class="volume">{{ history[key]['volume_short'] }}</span>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                {% endfor %}
+                <!-- Monthly Max Volume -->
+                <td class="{{ 'max-volume' if history.get('monthly_max_volume') else '' }}">
+                    {% if history.get('monthly_max_volume') %}
+                        {{ format_volume(history['monthly_max_volume']['volume'], short=True) }} at {{ history['monthly_max_volume']['price'] }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <!-- Monthly Min Volume -->
+                <td class="{{ 'min-volume' if history.get('monthly_min_volume') else '' }}">
+                    {% if history.get('monthly_min_volume') %}
+                        {{ format_volume(history['monthly_min_volume']['volume'], short=True) }} at {{ history['monthly_min_volume']['price'] }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
