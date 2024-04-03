@@ -1,0 +1,30 @@
+[
+    {
+        "name": "Bitcoin",
+        "url": "https://coinmarketcap.com/currencies/bitcoin/"
+    },
+    {
+        "name": "DUSK",
+        "url": "https://coinmarketcap.com/currencies/dusk/"
+    },
+    {
+        "name": "HNT",
+        "url": "https://coinmarketcap.com/currencies/helium/"
+    },
+    {
+        "name": "WMT",
+        "url": "https://coinmarketcap.com/currencies/world-mobile-token/"
+    },
+    {
+        "name": "GEODNET",
+        "url": "https://coinmarketcap.com/currencies/geodnet/"
+    },
+    {
+        "name": "Algorand",
+        "url": "https://coinmarketcap.com/currencies/algorand/"
+    },
+    {
+        "name": "Polkadot",
+        "url": "https://coinmarketcap.com/currencies/polkadot-new/"
+    }
+]
