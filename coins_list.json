@@ -12,6 +12,10 @@
         "url": "https://coinmarketcap.com/currencies/helium/"
     },
     {
+        "name": "Polkadot",
+        "url": "https://coinmarketcap.com/currencies/polkadot-new/"
+    },
+    {
         "name": "WMT",
         "url": "https://coinmarketcap.com/currencies/world-mobile-token/"
     },
@@ -24,7 +28,12 @@
         "url": "https://coinmarketcap.com/currencies/algorand/"
     },
     {
-        "name": "Polkadot",
-        "url": "https://coinmarketcap.com/currencies/polkadot-new/"
+        "name": "PAAL",
+        "url": "https://coinmarketcap.com/currencies/paal-ai/"
+    },
+    {
+        "name": "SHIB",
+        "url": "https://coinmarketcap.com/currencies/shiba-inu/"
     }
+
 ]
