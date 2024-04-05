@@ -51,8 +51,11 @@ def load_coins_history():
             # Replace the existing coins_history with the loaded data
             coins_history.update(data_loaded)
 
+        # print("Loaded coin history:", coins_history)  # Add this print statement SPAM DEBUG UPDATED LIST
+
     except FileNotFoundError:
         logging.info(f"{COINS_HISTORY_FILE} not found. Starting with an empty coins_history.")
+
 
 
 # Unformat volume for comparisons
@@ -99,7 +102,7 @@ def update_history_with_new_data(coin, data):
     })
 
     # Keep only the 100 most recent entries for 'current'
-    history['current'] = history['current'][:100]
+    history['current'] = history['current'][:300]
 
     # Calculate days ago for monthly max/min
     def calculate_days_ago(timestamp):
@@ -191,13 +194,18 @@ def index():
         prepared_history['Min 24h/V'] = format_volume(history.get('24_hour_min_volume', {'volume': float('inf')})['volume'])
         prepared_history['Max 24h/V'] = format_volume(history.get('24_hour_max_volume', {'volume': 0})['volume'])
 
-        # Include volume and price for monthly max and min volumes
-        prepared_history['Monthly Max Volume'] = f"{format_volume(history.get('monthly_max_volume', {}).get('volume', 0), short=True)} at {history.get('monthly_max_volume', {}).get('price', 'Unavailable')}"
-        prepared_history['Monthly Min Volume'] = f"{format_volume(history.get('monthly_min_volume', {}).get('volume', float('inf')), short=True)} at {history.get('monthly_min_volume', {}).get('price', 'Unavailable')}"
+        # Update days ago for monthly volumes
+        if history.get('monthly_max_volume'):
+            timestamp = datetime.fromisoformat(history['monthly_max_volume']['timestamp'])
+            prepared_history['monthly_max_volume']['days_ago'] = (current_time.date() - timestamp.date()).days
+        if history.get('monthly_min_volume'):
+            timestamp = datetime.fromisoformat(history['monthly_min_volume']['timestamp'])
+            prepared_history['monthly_min_volume']['days_ago'] = (current_time.date() - timestamp.date()).days
 
         prepared_data[coin] = prepared_history
 
     return render_template('index.html', coins_history=prepared_data, current_time=current_time, format_volume=format_volume)
+
 
 
 
