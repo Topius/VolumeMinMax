@@ -171,15 +171,14 @@ def get_time_key(time_diff):
     return None
 
 
-
-
 @app.route('/')
 def index():
     current_time = datetime.utcnow()
     prepared_data = {}
 
     # Initialize the time slots for each coin, including monthly max and min
-    time_keys = ['current', '-30mins', '-1hour', '-1.5hours', '-2hours', '-12hours', 'yesterday', 'monthly_max_volume', 'monthly_min_volume']
+    time_keys = ['current', '-30mins', '-1hour', '-1.5hours', '-2hours', '-12hours', 'yesterday', 'monthly_max_volume',
+                 'monthly_min_volume']
     for coin, history in coins_history.items():
         prepared_history = {k: history.get(k, None) for k in time_keys}
 
@@ -187,26 +186,35 @@ def index():
         current_data_list = prepared_history.get('current', [])
         if current_data_list:
             thirty_min_mark = current_time - timedelta(minutes=30)
-            closest_to_thirty_min = min(current_data_list, key=lambda x: abs((x['timestamp'] - thirty_min_mark).total_seconds()), default=None)
+            closest_to_thirty_min = min(current_data_list,
+                                        key=lambda x: abs((x['timestamp'] - thirty_min_mark).total_seconds()),
+                                        default=None)
             prepared_history['-30mins'] = closest_to_thirty_min or prepared_history.get('-30mins')
 
         # Format min and max 24-hour volumes for display
-        prepared_history['Min 24h/V'] = format_volume(history.get('24_hour_min_volume', {'volume': float('inf')})['volume'])
+        prepared_history['Min 24h/V'] = format_volume(
+            history.get('24_hour_min_volume', {'volume': float('inf')})['volume'])
         prepared_history['Max 24h/V'] = format_volume(history.get('24_hour_max_volume', {'volume': 0})['volume'])
 
         # Update days ago for monthly volumes
         if history.get('monthly_max_volume'):
-            timestamp = datetime.fromisoformat(history['monthly_max_volume']['timestamp'])
-            prepared_history['monthly_max_volume']['days_ago'] = (current_time.date() - timestamp.date()).days
+            timestamp_max = history['monthly_max_volume']['timestamp']
+            # Check if the timestamp is a string, and parse it if so
+            if isinstance(timestamp_max, str):
+                timestamp_max = datetime.fromisoformat(timestamp_max)
+            prepared_history['monthly_max_volume']['days_ago'] = (current_time.date() - timestamp_max.date()).days
+
         if history.get('monthly_min_volume'):
-            timestamp = datetime.fromisoformat(history['monthly_min_volume']['timestamp'])
-            prepared_history['monthly_min_volume']['days_ago'] = (current_time.date() - timestamp.date()).days
+            timestamp_min = history['monthly_min_volume']['timestamp']
+            # Check if the timestamp is a string, and parse it if so
+            if isinstance(timestamp_min, str):
+                timestamp_min = datetime.fromisoformat(timestamp_min)
+            prepared_history['monthly_min_volume']['days_ago'] = (current_time.date() - timestamp_min.date()).days
 
         prepared_data[coin] = prepared_history
 
-    return render_template('index.html', coins_history=prepared_data, current_time=current_time, format_volume=format_volume)
-
-
+    return render_template('index.html', coins_history=prepared_data, current_time=current_time,
+                           format_volume=format_volume)
 
 
 @app.route('/update_coin', methods=['POST'])
