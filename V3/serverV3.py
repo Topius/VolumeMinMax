@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 COINS_HISTORY_FILE = 'coins_history.txt'  # Define the file path
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///coins.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///coinsNEW.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -295,6 +295,18 @@ def update_coin():
 
     return '', 204
 
+@app.route('/api/coin_history')
+def coin_history_api():
+    coin_histories = CoinHistory.query.all()
+    return jsonify([{
+        'id': history.id,
+        'coin_name': history.coin_name,
+        'timestamp': history.timestamp.isoformat(),
+        'volume': history.volume,
+        'change': history.change,
+        'direction': history.direction,
+        'price': history.price
+    } for history in coin_histories])
 
 
 
