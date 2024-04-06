@@ -7,6 +7,7 @@ import time
 import logging
 from flask_sqlalchemy import SQLAlchemy
 import json
+from flask import jsonify  # Import jsonify for error responses
 
 # Configure basic logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -15,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 COINS_HISTORY_FILE = 'coins_history.txt'  # Define the file path
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///coinsNEW.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///coins.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -79,7 +80,7 @@ class CoinHistory(db.Model):
     price = db.Column(db.String(20))
 
     def __repr__(self):
-        return f'<CoinHistory {self.coin_name}>'
+        return f'<CoinHistory {self.coin_name}, Timestamp: {self.timestamp}, Volume: {self.volume}, Change: {self.change}, Direction: {self.direction}, Price: {self.price}>'
 
 
 
@@ -248,22 +249,22 @@ def index():
                            format_volume=format_volume)
 
 
+
+
 @app.route('/update_coin', methods=['POST'])
 def update_coin():
     coin_info = request.json
     coin_name = coin_info['name'].lower()
 
-    # Extract volume from the JSON data and remove commas before converting to float
     volume_str = coin_info.get('volume', "0").replace(',', '')
     try:
         volume = float(volume_str)
     except ValueError as e:
         logging.error(f"Error converting volume to float: {e}")
-        return "Error processing volume", 400
+        return jsonify(error="Error processing volume"), 400
 
     logging.debug(f"Received coin info: {coin_info}, volume: {volume}")
 
-    # Prepare the data for the history and the database
     coin_data_for_history = {
         'timestamp': datetime.utcnow(),
         'change': coin_info.get('change', ''),
@@ -273,22 +274,25 @@ def update_coin():
         'volume': volume
     }
 
-    # Update the in-memory history
     update_history_with_new_data(coin_name, coin_data_for_history)
 
-    # Persist the new coin data to the database
-    new_coin_history_entry = CoinHistory(
-        coin_name=coin_name,
-        timestamp=coin_data_for_history['timestamp'],
-        volume=volume_str,  # storing the original string format
-        change=coin_data_for_history['change'],
-        direction=coin_data_for_history['direction'],
-        price=coin_data_for_history['price']
-    )
-    db.session.add(new_coin_history_entry)
-    db.session.commit()
+    try:
+        new_coin_history_entry = CoinHistory(
+            coin_name=coin_name,
+            timestamp=coin_data_for_history['timestamp'],
+            volume=volume_str,
+            change=coin_data_for_history['change'],
+            direction=coin_data_for_history['direction'],
+            price=coin_data_for_history['price']
+        )
+        db.session.add(new_coin_history_entry)
+        db.session.commit()
+        logging.info(f"Persisted to DB: {new_coin_history_entry}")
+    except Exception as e:
+        logging.error(f"Failed to insert coin data into DB: {e}")
+        db.session.rollback()
+        return jsonify(error="Database insertion failed"), 500
 
-    logging.info(f"Data for {coin_name} updated successfully.")
     return '', 204
 
 
