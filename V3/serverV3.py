@@ -11,12 +11,14 @@ import json
 # Configure basic logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-app = Flask(__name__)
 
 COINS_HISTORY_FILE = 'coins_history.txt'  # Define the file path
 
+app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///coinsNEW.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
 
 
 # Initialize the coins_history with additional structure for monthly max/min volume
@@ -171,6 +173,35 @@ def get_time_key(time_diff):
     return None
 
 
+def sync_file_data_with_db():
+    try:
+        with open(COINS_HISTORY_FILE, 'r') as f:
+            data_loaded = json.load(f)
+            for coin, history_list in data_loaded.items():
+                for entry in history_list.get('current', []):  # Assuming 'current' holds the relevant entries
+                    # Parse the timestamp string to a datetime object
+                    timestamp = datetime.fromisoformat(entry['timestamp'])
+                    # Check if this entry already exists in the DB
+                    exists = CoinHistory.query.filter_by(coin_name=coin, timestamp=timestamp).first()
+                    if not exists:
+                        # Entry does not exist, so we insert it
+                        new_entry = CoinHistory(
+                            coin_name=coin,
+                            timestamp=timestamp,
+                            volume=entry['volume'],
+                            change=entry['change'],
+                            direction=entry['direction'],
+                            price=entry['price']
+                        )
+                        db.session.add(new_entry)
+            db.session.commit()
+    except FileNotFoundError:
+        logging.info(f"{COINS_HISTORY_FILE} not found. No data to sync with DB.")
+    except Exception as e:
+        logging.error(f"Error syncing file data with DB: {str(e)}")
+
+
+
 @app.route('/')
 def index():
     current_time = datetime.utcnow()
@@ -232,14 +263,34 @@ def update_coin():
 
     logging.debug(f"Received coin info: {coin_info}, volume: {volume}")
 
-    coin_info['timestamp'] = datetime.utcnow()
-    coin_info['volume'] = volume  # Volume is now a float
-    coin_info['volume_short'] = format_volume(coin_info['volume'])
-    coin_info['price'] = coin_info.get('price', 'Unavailable')
+    # Prepare the data for the history and the database
+    coin_data_for_history = {
+        'timestamp': datetime.utcnow(),
+        'change': coin_info.get('change', ''),
+        'volume_short': format_volume(volume),
+        'direction': coin_info.get('direction', ''),
+        'price': coin_info.get('price', 'Unavailable'),
+        'volume': volume
+    }
 
-    # Update the history with the new data
-    update_history_with_new_data(coin_name, coin_info)
+    # Update the in-memory history
+    update_history_with_new_data(coin_name, coin_data_for_history)
+
+    # Persist the new coin data to the database
+    new_coin_history_entry = CoinHistory(
+        coin_name=coin_name,
+        timestamp=coin_data_for_history['timestamp'],
+        volume=volume_str,  # storing the original string format
+        change=coin_data_for_history['change'],
+        direction=coin_data_for_history['direction'],
+        price=coin_data_for_history['price']
+    )
+    db.session.add(new_coin_history_entry)
+    db.session.commit()
+
+    logging.info(f"Data for {coin_name} updated successfully.")
     return '', 204
+
 
 
 
@@ -273,8 +324,9 @@ debug_print_coin_history('BITCOIN')
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # Create the tables if they don't exist
+        db.create_all()  # Create the tables if they don't exist already
         load_coins_history()  # Load the coins history from the file
+        sync_file_data_with_db()  # Sync data from the file with the DB
     threading.Thread(target=schedule_update).start()
     app.run(host='0.0.0.0', port=5000, debug=True)
 
