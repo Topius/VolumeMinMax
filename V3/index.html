@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Coin Dashboard</title>
-            <!-- Add this line for auto-refresh every 60 seconds -->
+        <!-- Add this line for auto-refresh every 60 seconds -->
     <meta http-equiv="refresh" content="60">
     <style>
         body {
@@ -54,10 +54,15 @@
         .max-volume .volume {
             color: inherit; /* Inherit text color from regular columns */
         }
+        #charts-link {
+        margin-left: 20px; /* Adjust this value as needed */
+        display: inline-block; /* This allows the margin to take effect */
+        }
     </style>
 </head>
 <body>
-    <h1>Coin Dashboard</h1>
+
+    <h1>Coin Dashboard <a id="charts-link" href="http://127.0.0.1:5000/charts" target="_blank">CHARTS</a></h1>
     <table class="coin-table">
         <thead>
             <tr>
